@@ -20,6 +20,7 @@
    DB_PASSWORD=your_root_password
    DB_NAME=math_game
    FRONTEND_ORIGIN=http://localhost:5173
+   REQUEST_TIMEOUT_MS=30000
    ```
 3. **Database**
    - Ensure MySQL is running:
@@ -245,7 +246,7 @@ All errors follow a standardized format:
 - `INVALID_INPUT` (400) - Invalid input data
 - `INTERNAL_ERROR` (500) - Internal server error
 - `DATABASE_ERROR` (500) - Database operation failed
-- `SERVICE_UNAVAILABLE` (503) - Service temporarily unavailable
+- `SERVICE_UNAVAILABLE` (503) - Service temporarily unavailable (e.g., request timeout, database disconnected)
 
 All error responses include:
 - `code`: Machine-readable error code
@@ -265,6 +266,7 @@ All error responses include:
 - **Structured logging**: All logs are output in JSON format for easy parsing and integration with log aggregation tools. Includes request/response details, error stack traces, and performance metrics.
 - **Health check**: Includes database connectivity test. Returns `503` if database is unavailable.
 - **Graceful shutdown**: Server handles SIGTERM/SIGINT signals and closes connections cleanly.
+- **Request timeout**: All requests have a configurable timeout (default: 30 seconds via `REQUEST_TIMEOUT_MS`). Requests exceeding the timeout return a `503 SERVICE_UNAVAILABLE` error with timeout details.
 - Tuning (ranges, timing, scoring bonuses) can be adjusted in:
   - `logic/arithmetic-generator.ts`
   - `logic/equation-generator.ts`

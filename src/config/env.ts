@@ -12,6 +12,7 @@ const envSchema = z.object({
   DB_NAME: z.string().default("math_game"),
   FRONTEND_ORIGIN: z.string().url().optional(),
   NODE_ENV: z.string().optional(),
+  REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
 });
 
 const parsed = envSchema.safeParse(process.env);

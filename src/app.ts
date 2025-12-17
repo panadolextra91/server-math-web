@@ -12,6 +12,7 @@ import { docsRouter } from "./routes/docs.routes";
 import { errorHandler } from "./middlewares/error-handler";
 import { requestLogger } from "./middlewares/request-logger";
 import { requestIdMiddleware } from "./middlewares/request-id";
+import { timeoutMiddleware } from "./middlewares/timeout";
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp() {
   app.use(express.json());
   app.use(requestIdMiddleware);
   app.use(requestLogger);
+  app.use(timeoutMiddleware(env.REQUEST_TIMEOUT_MS));
 
   app.use("/api", healthRouter);
   app.use("/api", sessionsRouter);
