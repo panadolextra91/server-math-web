@@ -353,9 +353,12 @@ All tests use the same database connection as the dev server, so ensure MySQL is
     - Returns `404` if player not found
     - Note: This endpoint provides the same data as `/api/players/:playerName/metrics` but with a different response structure
 
-- **Metrics** (Performance Monitoring)
+- **Metrics** (Performance Monitoring & Analytics)
   - `GET /api/metrics` (Admin only - requires `X-Admin-API-Key` header or `admin-api-key` query parameter)
-    - Returns real-time server-wide performance metrics for the last 60 seconds:
+    - Returns comprehensive server metrics including:
+      - **Real-time performance metrics** (60-second sliding window)
+      - **Enhanced analytics** (all-time and time-based statistics)
+    - Real-time performance metrics:
       ```json
       {
         "totalRequests": 150,
@@ -387,10 +390,103 @@ All tests use the same database connection as the dev server, so ensure MySQL is
           "p99": 120
         },
         "uptime": 3600000,
-        "timestamp": 1702800000000
+        "timestamp": 1702800000000,
+        "analytics": {
+          "players": {
+            "total": 150,
+            "today": 25,
+            "thisMonth": 120,
+            "activeToday": 20
+          },
+          "sessions": {
+            "total": 500,
+            "active": 15,
+            "completed": 485,
+            "today": 30,
+            "thisMonth": 200,
+            "avgDuration": 12.5
+          },
+          "questions": {
+            "total": 5000,
+            "today": 150,
+            "thisMonth": 2000,
+            "totalCorrect": 4250,
+            "totalWrong": 750,
+            "overallAccuracy": 0.85,
+            "todayAccuracy": 0.88,
+            "thisMonthAccuracy": 0.86
+          },
+          "topics": {
+            "mostPlayed": {
+              "mode": "arithmetic",
+              "difficulty": "easy",
+              "count": 2500
+            },
+            "byMode": [
+              {
+                "mode": "arithmetic",
+                "count": 3500,
+                "accuracy": 0.87,
+                "avgTimeMs": 4500
+              }
+            ],
+            "byDifficulty": [
+              {
+                "difficulty": "easy",
+                "count": 2500,
+                "accuracy": 0.92,
+                "avgTimeMs": 4000
+              }
+            ],
+            "byModeAndDifficulty": [
+              {
+                "mode": "arithmetic",
+                "difficulty": "easy",
+                "count": 2000,
+                "accuracy": 0.93
+              }
+            ]
+          },
+          "performance": {
+            "avgResponseTime": 5200,
+            "avgResponseTimeToday": 4800,
+            "fastestAvgResponseTime": {
+              "mode": "arithmetic",
+              "difficulty": "easy",
+              "avgTimeMs": 3500
+            },
+            "highestAccuracy": {
+              "mode": "arithmetic",
+              "difficulty": "easy",
+              "accuracy": 0.95
+            }
+          },
+          "activity": {
+            "peakHour": 14,
+            "questionsPerHour": [
+              { "hour": 0, "count": 10 },
+              { "hour": 14, "count": 150 }
+            ]
+          },
+          "scores": {
+            "totalScore": 50000,
+            "avgScorePerSession": 100,
+            "highestScore": 250,
+            "avgScorePerQuestion": 10
+          },
+          "timestamp": "2025-12-17T12:00:00.000Z"
+        }
       }
       ```
-    - Metrics are calculated from a 60-second sliding window
+    - **Real-time metrics** are calculated from a 60-second sliding window
+    - **Analytics** include:
+      - **Players**: Total, today, this month, active today
+      - **Sessions**: Total, active, completed, today, this month, average duration
+      - **Questions**: Total, today, this month, correct/wrong counts, accuracy (overall/today/month)
+      - **Topics**: Most played mode/difficulty, breakdowns by mode, difficulty, and combinations
+      - **Performance**: Average response times, fastest mode/difficulty, highest accuracy
+      - **Activity**: Peak hour, questions per hour distribution
+      - **Scores**: Total score, highest score, averages per session/question
     - Endpoint paths are normalized (numeric IDs replaced with `:id` for better grouping)
     - **Authentication**: Requires admin API key (set via `ADMIN_API_KEY` environment variable)
       - Send API key in header: `X-Admin-API-Key: your-api-key`

@@ -3,6 +3,7 @@ node_modules
 .env
 .cursor
 SERVER_PLAN.md
+CLIENT_GUIDE.md
 
 
 
