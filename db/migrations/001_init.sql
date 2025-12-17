@@ -40,3 +40,4 @@ CREATE INDEX idx_sessions_player_name ON sessions(player_name);
 CREATE INDEX idx_sessions_player_name_started ON sessions(player_name, started_at);
 
 
+
