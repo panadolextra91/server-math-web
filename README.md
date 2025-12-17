@@ -48,11 +48,18 @@
      ```
 
 ### 3. Run the server
-- **Dev mode**
+- **Dev mode** (with auto-reload on file changes)
   ```bash
   npm run dev
   ```
   Server listens on `http://localhost:3000`.
+
+- **Production mode** (compiled JavaScript)
+  ```bash
+  npm run build
+  npm start
+  ```
+  The `build` command compiles TypeScript to JavaScript in the `dist/` directory.
 
 ### 4. Testing API Endpoints
 
@@ -73,7 +80,11 @@ The project includes automated API tests using **Vitest** and **Supertest**. No 
 - ✅ Session lifecycle (create, end, summary)
 - ✅ Question generation and answer grading (full flow)
 - ✅ Analytics and leaderboard endpoints
-- ✅ Metrics and performance monitoring
+- ✅ Metrics and performance monitoring (server-wide and player-specific)
+- ✅ Admin authentication for protected endpoints
+- ✅ Player statistics and metrics endpoints
+- ✅ Input sanitization and validation
+- ✅ Error handling and standardized error responses
 
 All tests use the same database connection as the dev server, so ensure MySQL is running before running tests.
 
@@ -112,12 +123,55 @@ All tests use the same database connection as the dev server, so ensure MySQL is
       ```
     - Response: `{ sessionId, playerName, startedAt }`
   - `PATCH /api/sessions/:sessionId/end`
-    - Response: `{ sessionId, finishedAt, summary }`
+    - Marks the session as finished
+    - Response:
+      ```json
+      {
+        "sessionId": 1,
+        "finishedAt": "2025-12-17T12:00:00.000Z",
+        "summary": {
+          "totalQuestions": 10,
+          "totalCorrect": 8,
+          "totalWrong": 2,
+          "accuracy": 0.8,
+          "avgTimeMs": 4500,
+          "totalScore": 75
+        }
+      }
+      ```
+    - Returns `404` if session not found
   - `GET /api/sessions/:sessionId/summary`
-    - Response: session summary including history and stats.
+    - Returns detailed session summary including answer history
+    - Response:
+      ```json
+      {
+        "sessionId": 1,
+        "mode": "arithmetic",
+        "difficulty": "easy",
+        "totalQuestions": 10,
+        "totalCorrect": 8,
+        "totalWrong": 2,
+        "accuracy": 0.8,
+        "avgTimeMs": 4500,
+        "totalScore": 75,
+        "history": [
+          {
+            "id": 1,
+            "questionText": "3 + 5 = ?",
+            "isCorrect": true,
+            "scoreDelta": 10,
+            "elapsedMs": 3000,
+            "createdAt": "2025-12-17T12:00:00.000Z"
+          }
+        ]
+      }
+      ```
+    - Returns `404` if session not found
 
 - **Questions**
   - `POST /api/questions/generate`
+    - Generates a new math question based on mode and difficulty
+    - Questions are stored in the database for auditability
     - Body:
       ```json
       {
@@ -134,13 +188,23 @@ All tests use the same database connection as the dev server, so ensure MySQL is
         "difficulty": "easy",
         "type": "arithmetic",
         "questionText": "3 + 5 = ?",
-        "payload": { "operands": [3,5], "operators": ["+"] },
+        "payload": {
+          "operands": [3, 5],
+          "operators": ["+"],
+          "result": 8,
+          "answer": "8"
+        },
         "maxTimeMs": 15000
       }
       ```
+    - For equation mode, `payload` includes `coefficient`, `constant`, `solution`, etc.
+    - Returns `404` if session not found
+    - Returns `400` if validation fails
 
 - **Answers / grading**
   - `POST /api/answers/submit`
+    - Submits an answer for grading and updates session statistics
+    - Scoring: +10 for correct, -5 for incorrect, +3 speed bonus if answered quickly
     - Body:
       ```json
       {
@@ -153,7 +217,9 @@ All tests use the same database connection as the dev server, so ensure MySQL is
         "elapsedMs": 4000
       }
       ```
-      *(optional `correctAnswer` field is used only when `questionId` is missing).*
+      - `questionId` (optional): ID of the question from `/api/questions/generate`
+      - `correctAnswer` (optional): Only used when `questionId` is missing (server recomputes when possible)
+      - `elapsedMs`: Time taken to answer in milliseconds (used for speed bonus calculation)
     - Response:
       ```json
       {
@@ -171,17 +237,56 @@ All tests use the same database connection as the dev server, so ensure MySQL is
         }
       }
       ```
+    - Returns `404` if session not found
+    - Returns `400` if validation fails
+    - Note: Leaderboard cache is automatically invalidated after each answer submission
 
 - **Analytics**
   - `GET /api/analytics/overview?level=easy`
-    - Response: aggregated stats across all sessions and difficulty levels (and per difficulty).
+    - Query parameter `level` (optional): `easy` | `medium` | `hard` - filter by difficulty level
+    - Response: aggregated stats across all sessions and difficulty levels:
+      ```json
+      {
+        "totalPlayers": 50,
+        "totalSessions": 200,
+        "totalQuestions": 5000,
+        "avgAccuracy": 0.85,
+        "avgTimeMs": 5200,
+        "byDifficulty": [
+          {
+            "level": "easy",
+            "totalQuestions": 2000,
+            "accuracy": 0.92,
+            "avgTimeMs": 4000
+          },
+          {
+            "level": "medium",
+            "totalQuestions": 2000,
+            "accuracy": 0.83,
+            "avgTimeMs": 5500
+          },
+          {
+            "level": "hard",
+            "totalQuestions": 1000,
+            "accuracy": 0.75,
+            "avgTimeMs": 7000
+          }
+        ]
+      }
+      ```
 
 - **Leaderboard**
   - `GET /api/leaderboard?scope=all&limit=20&page=1` or `&offset=0`
-    - `scope`: `all` | `weekly` | `daily` (default: `all`)
-    - `limit`: number (default: 20, max: 100)
-    - `page`: number (1-based, alternative to offset)
-    - `offset`: number (alternative to page)
+    - Returns ranked list of players sorted by total score (descending), then accuracy
+    - Results are cached for 60 seconds to improve performance
+    - Query parameters:
+      - `scope`: `all` | `weekly` | `daily` (default: `all`)
+        - `all`: All-time leaderboard
+        - `weekly`: Last 7 days
+        - `daily`: Last 24 hours
+      - `limit`: number (default: 20, max: 100) - Number of entries per page
+      - `page`: number (1-based) - Page number (alternative to `offset`)
+      - `offset`: number - Number of entries to skip (alternative to `page`)
     - Response:
       ```json
       {
@@ -209,6 +314,8 @@ All tests use the same database connection as the dev server, so ensure MySQL is
 
 - **Player Statistics**
   - `GET /api/players/:playerName/stats`
+    - Returns comprehensive player statistics across all sessions
+    - Player name is automatically sanitized (trimmed, special characters removed)
     - Response:
       ```json
       {
@@ -227,11 +334,24 @@ All tests use the same database connection as the dev server, so ensure MySQL is
             "totalQuestions": 30,
             "accuracy": 0.95,
             "avgTimeMs": 4000
+          },
+          {
+            "level": "medium",
+            "totalQuestions": 30,
+            "accuracy": 0.90,
+            "avgTimeMs": 5500
+          },
+          {
+            "level": "hard",
+            "totalQuestions": 15,
+            "accuracy": 0.80,
+            "avgTimeMs": 7000
           }
         ]
       }
       ```
     - Returns `404` if player not found
+    - Note: This endpoint provides the same data as `/api/players/:playerName/metrics` but with a different response structure
 
 - **Metrics** (Performance Monitoring)
   - `GET /api/metrics` (Admin only - requires `X-Admin-API-Key` header or `admin-api-key` query parameter)
@@ -307,7 +427,24 @@ All tests use the same database connection as the dev server, so ensure MySQL is
     - Players can view their own metrics by providing their player name
     - No authentication required - players can access their stats freely
 
-### 7. Error Handling
+### 7. Authentication & Authorization
+
+The server uses a simple, flexible authentication model:
+
+- **No authentication required for players**: Players can use the game by simply providing their name. No login or account creation is required.
+- **Admin API key for server metrics**: 
+  - Server-wide metrics endpoints (`GET /api/metrics`, `POST /api/metrics/reset`) require an admin API key
+  - Set the `ADMIN_API_KEY` environment variable to enable protection
+  - Send the API key via:
+    - Header: `X-Admin-API-Key: your-api-key`
+    - Query parameter: `?admin-api-key=your-api-key`
+  - If `ADMIN_API_KEY` is not set, these endpoints are publicly accessible (useful for development)
+- **Public player endpoints**: 
+  - Player statistics (`GET /api/players/:playerName/stats`)
+  - Player metrics (`GET /api/players/:playerName/metrics`)
+  - These endpoints are publicly accessible - players can view their own stats by providing their player name
+
+### 8. Error Handling
 
 All errors follow a standardized format:
 
@@ -326,11 +463,12 @@ All errors follow a standardized format:
 ```
 
 **Error Codes:**
-- `VALIDATION_ERROR` (400) - Request validation failed
-- `NOT_FOUND` (404) - Resource not found
-- `BAD_REQUEST` (400) - Invalid request
-- `INVALID_INPUT` (400) - Invalid input data
-- `INTERNAL_ERROR` (500) - Internal server error
+- `VALIDATION_ERROR` (400) - Request validation failed (e.g., missing required fields, invalid enum values)
+- `NOT_FOUND` (404) - Resource not found (e.g., session, player, question)
+- `BAD_REQUEST` (400) - Invalid request format or malformed data
+- `INVALID_INPUT` (400) - Invalid input data (e.g., invalid player name format)
+- `UNAUTHORIZED` (401) - Authentication required (e.g., missing or invalid admin API key)
+- `INTERNAL_ERROR` (500) - Internal server error (unexpected server-side errors)
 - `DATABASE_ERROR` (500) - Database operation failed
 - `SERVICE_UNAVAILABLE` (503) - Service temporarily unavailable (e.g., request timeout, database disconnected)
 
@@ -340,7 +478,7 @@ All error responses include:
 - `requestId`: Unique request ID for tracing
 - `details`: Optional additional error context
 
-### 8. Notes
+### 9. Notes
 - Scores are always computed on the server (never trust client scores).
 - Questions are generated on the fly but stored in `questions` table for auditability and correct-answer lookup.
 - **Input sanitization**: Player names are automatically sanitized (trimmed, limited to 64 chars, special characters removed).
