@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import { env } from "./config/env";
 import { healthRouter } from "./routes/health.routes";
 import { sessionsRouter } from "./routes/sessions.routes";
@@ -9,6 +8,7 @@ import { questionsRouter } from "./routes/questions.routes";
 import { answersRouter } from "./routes/answers.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
 import { errorHandler } from "./middlewares/error-handler";
+import { requestLogger } from "./middlewares/request-logger";
 
 export function createApp() {
   const app = express();
@@ -22,7 +22,7 @@ export function createApp() {
     ),
   );
   app.use(express.json());
-  app.use(morgan("dev"));
+  app.use(requestLogger);
 
   app.use("/api", healthRouter);
   app.use("/api", sessionsRouter);
