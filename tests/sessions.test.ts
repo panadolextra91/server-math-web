@@ -20,6 +20,46 @@ describe("Sessions API", () => {
     expect(summaryRes.body.sessionId).toBe(sessionId);
     expect(summaryRes.body.totalQuestions).toBe(0);
   });
+
+  it("sanitizes player name input", async () => {
+    // Test trimming
+    const res1 = await request(app)
+      .post("/api/sessions")
+      .send({ playerName: "  TrimmedUser  ", mode: "arithmetic" })
+      .expect(201);
+    expect(res1.body.playerName).toBe("TrimmedUser");
+
+    // Test special character removal
+    const res2 = await request(app)
+      .post("/api/sessions")
+      .send({ playerName: "User@#$%Name123", mode: "arithmetic" })
+      .expect(201);
+    expect(res2.body.playerName).toBe("UserName123");
+
+    // Test length limit (64 chars)
+    const longName = "A".repeat(100);
+    const res3 = await request(app)
+      .post("/api/sessions")
+      .send({ playerName: longName, mode: "arithmetic" })
+      .expect(201);
+    expect(res3.body.playerName.length).toBeLessThanOrEqual(64);
+
+    // Test invalid names
+    await request(app)
+      .post("/api/sessions")
+      .send({ playerName: "", mode: "arithmetic" })
+      .expect(400);
+
+    await request(app)
+      .post("/api/sessions")
+      .send({ playerName: "   ", mode: "arithmetic" })
+      .expect(400);
+
+    await request(app)
+      .post("/api/sessions")
+      .send({ playerName: "@#$%", mode: "arithmetic" })
+      .expect(400);
+  });
 });
 
 
