@@ -8,6 +8,7 @@ export enum ErrorCode {
   NOT_FOUND = "NOT_FOUND",
   BAD_REQUEST = "BAD_REQUEST",
   INVALID_INPUT = "INVALID_INPUT",
+  UNAUTHORIZED = "UNAUTHORIZED",
 
   // Server errors (5xx)
   INTERNAL_ERROR = "INTERNAL_ERROR",
@@ -74,6 +75,12 @@ export class ServiceUnavailableError extends AppError {
       service,
       ...details,
     });
+  }
+}
+
+export class UnauthorizedError extends AppError {
+  constructor(message: string, details?: Record<string, any>) {
+    super(message, 401, ErrorCode.UNAUTHORIZED, details);
   }
 }
 

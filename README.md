@@ -26,6 +26,8 @@
    DB_QUEUE_LIMIT=0
    DB_IDLE_TIMEOUT_MS=60000
    DB_CONNECT_TIMEOUT_MS=10000
+   # Admin API key for server metrics access (optional - if not set, metrics are publicly accessible)
+   ADMIN_API_KEY=your-secret-admin-key-here
    ```
 3. **Database**
    - Ensure MySQL is running:
@@ -71,6 +73,7 @@ The project includes automated API tests using **Vitest** and **Supertest**. No 
 - ✅ Session lifecycle (create, end, summary)
 - ✅ Question generation and answer grading (full flow)
 - ✅ Analytics and leaderboard endpoints
+- ✅ Metrics and performance monitoring
 
 All tests use the same database connection as the dev server, so ensure MySQL is running before running tests.
 
@@ -230,6 +233,80 @@ All tests use the same database connection as the dev server, so ensure MySQL is
       ```
     - Returns `404` if player not found
 
+- **Metrics** (Performance Monitoring)
+  - `GET /api/metrics` (Admin only - requires `X-Admin-API-Key` header or `admin-api-key` query parameter)
+    - Returns real-time server-wide performance metrics for the last 60 seconds:
+      ```json
+      {
+        "totalRequests": 150,
+        "totalErrors": 2,
+        "averageResponseTime": 12.5,
+        "minResponseTime": 1,
+        "maxResponseTime": 250,
+        "requestsPerSecond": 2.5,
+        "statusCodes": {
+          "200": 145,
+          "404": 3,
+          "500": 2
+        },
+        "endpoints": {
+          "GET /health": {
+            "count": 50,
+            "avgResponseTime": 2.1,
+            "errors": 0
+          },
+          "POST /sessions": {
+            "count": 30,
+            "avgResponseTime": 15.3,
+            "errors": 0
+          }
+        },
+        "responseTimePercentiles": {
+          "p50": 5,
+          "p95": 45,
+          "p99": 120
+        },
+        "uptime": 3600000,
+        "timestamp": 1702800000000
+      }
+      ```
+    - Metrics are calculated from a 60-second sliding window
+    - Endpoint paths are normalized (numeric IDs replaced with `:id` for better grouping)
+    - **Authentication**: Requires admin API key (set via `ADMIN_API_KEY` environment variable)
+      - Send API key in header: `X-Admin-API-Key: your-api-key`
+      - Or as query parameter: `?admin-api-key=your-api-key`
+      - If `ADMIN_API_KEY` is not set, endpoint is publicly accessible (development mode)
+  - `POST /api/metrics/reset` (Admin only)
+    - Resets all collected metrics
+    - Response: `{ "message": "Metrics reset successfully" }`
+    - Requires same admin authentication as `GET /api/metrics`
+  - `GET /api/players/:playerName/metrics` (Public - no authentication required)
+    - Returns player-specific performance metrics:
+      ```json
+      {
+        "playerName": "Alice",
+        "totalSessions": 5,
+        "totalQuestions": 75,
+        "totalCorrect": 68,
+        "totalWrong": 7,
+        "accuracy": 0.907,
+        "averageResponseTime": 5200,
+        "totalScore": 650,
+        "bestScore": 180,
+        "byDifficulty": [
+          {
+            "level": "easy",
+            "totalQuestions": 30,
+            "accuracy": 0.95,
+            "avgTimeMs": 4000
+          }
+        ],
+        "timestamp": "2025-12-17T12:00:00.000Z"
+      }
+      ```
+    - Players can view their own metrics by providing their player name
+    - No authentication required - players can access their stats freely
+
 ### 7. Error Handling
 
 All errors follow a standardized format:
@@ -280,6 +357,9 @@ All error responses include:
   - Connection pool is configurable via environment variables (`DB_CONNECTION_LIMIT`, `DB_QUEUE_LIMIT`, `DB_IDLE_TIMEOUT_MS`, `DB_CONNECT_TIMEOUT_MS`)
   - Performance indexes are available in `db/migrations/002_add_performance_indexes.sql` to optimize common queries (session history, leaderboard, player stats, session cleanup)
   - Query optimizations include efficient aggregation queries and proper index usage
+- **Performance monitoring**: 
+  - Server-wide metrics endpoint (`GET /api/metrics`) - Admin only, protected by API key. Tracks response times, request counts, error rates, and endpoint statistics over a 60-second sliding window.
+  - Player metrics endpoint (`GET /api/players/:playerName/metrics`) - Public access, no authentication required. Players can view their own performance statistics including accuracy, scores, and difficulty breakdowns.
 - Tuning (ranges, timing, scoring bonuses) can be adjusted in:
   - `logic/arithmetic-generator.ts`
   - `logic/equation-generator.ts`

@@ -17,6 +17,7 @@ const envSchema = z.object({
   DB_QUEUE_LIMIT: z.coerce.number().int().nonnegative().default(0),
   DB_IDLE_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(60000),
   DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
+  ADMIN_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
