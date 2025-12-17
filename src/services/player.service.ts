@@ -31,6 +31,7 @@ export async function getPlayerStats(playerName: string): Promise<PlayerStats | 
   }
 
   // Get overall stats
+  // Optimized: removed subquery, calculate bestScore in a separate efficient query
   const [overallRows] = await pool.execute(
     `
     SELECT
@@ -40,21 +41,32 @@ export async function getPlayerStats(playerName: string): Promise<PlayerStats | 
       SUM(CASE WHEN a.is_correct = 0 THEN 1 ELSE 0 END) AS totalWrong,
       AVG(CASE WHEN a.is_correct = 1 THEN 1.0 ELSE 0 END) AS accuracy,
       AVG(a.elapsed_ms) AS avgTimeMs,
-      SUM(a.score_delta) AS totalScore,
-      MAX(s2.total_score) AS bestScore
+      SUM(a.score_delta) AS totalScore
     FROM sessions s
     LEFT JOIN answer_logs a ON a.session_id = s.id
-    LEFT JOIN (
-      SELECT session_id, SUM(score_delta) AS total_score
-      FROM answer_logs
-      GROUP BY session_id
-    ) s2 ON s2.session_id = s.id
     WHERE s.player_name = ?
   `,
     [playerName],
   );
 
   const overall = (overallRows as any[])[0] ?? {};
+
+  // Get best score separately (more efficient than subquery)
+  const [bestScoreRows] = await pool.execute(
+    `
+    SELECT MAX(session_score) AS bestScore
+    FROM (
+      SELECT s.id, SUM(a.score_delta) AS session_score
+      FROM sessions s
+      JOIN answer_logs a ON a.session_id = s.id
+      WHERE s.player_name = ?
+      GROUP BY s.id
+    ) session_scores
+  `,
+    [playerName],
+  );
+
+  const bestScore = Number((bestScoreRows as any[])[0]?.bestScore ?? 0);
 
   // Get stats by difficulty
   const [byDiffRows] = await pool.execute(
@@ -84,7 +96,7 @@ export async function getPlayerStats(playerName: string): Promise<PlayerStats | 
         ? Number(overall.avgTimeMs)
         : null,
     totalScore: Number(overall.totalScore ?? 0),
-    bestScore: Number(overall.bestScore ?? 0),
+    bestScore,
     byDifficulty: (byDiffRows as any[]).map((row) => ({
       level: row.level,
       totalQuestions: Number(row.totalQuestions ?? 0),

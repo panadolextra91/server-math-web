@@ -8,7 +8,18 @@ export const pool = mysql.createPool({
   password: env.DB_PASSWORD,
   database: env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  connectionLimit: env.DB_CONNECTION_LIMIT,
+  queueLimit: env.DB_QUEUE_LIMIT,
+  idleTimeout: env.DB_IDLE_TIMEOUT_MS,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  // Connection timeout for establishing new connections
+  connectTimeout: env.DB_CONNECT_TIMEOUT_MS,
+  // Enable multiple statements (use with caution, disabled by default for security)
+  multipleStatements: false,
+  // Timezone
+  timezone: "Z", // UTC
+  // Character set
+  charset: "utf8mb4",
 });
 

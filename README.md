@@ -21,6 +21,11 @@
    DB_NAME=math_game
    FRONTEND_ORIGIN=http://localhost:5173
    REQUEST_TIMEOUT_MS=30000
+   # Database connection pool settings (optional)
+   DB_CONNECTION_LIMIT=10
+   DB_QUEUE_LIMIT=0
+   DB_IDLE_TIMEOUT_MS=60000
+   DB_CONNECT_TIMEOUT_MS=10000
    ```
 3. **Database**
    - Ensure MySQL is running:
@@ -34,6 +39,10 @@
    - Apply schema:
      ```bash
      mysql -u root -p math_game < db/migrations/001_init.sql
+     ```
+   - Apply performance indexes (recommended):
+     ```bash
+     mysql -u root -p math_game < db/migrations/002_add_performance_indexes.sql
      ```
 
 ### 3. Run the server
@@ -267,6 +276,10 @@ All error responses include:
 - **Health check**: Includes database connectivity test. Returns `503` if database is unavailable.
 - **Graceful shutdown**: Server handles SIGTERM/SIGINT signals and closes connections cleanly.
 - **Request timeout**: All requests have a configurable timeout (default: 30 seconds via `REQUEST_TIMEOUT_MS`). Requests exceeding the timeout return a `503 SERVICE_UNAVAILABLE` error with timeout details.
+- **Database optimizations**:
+  - Connection pool is configurable via environment variables (`DB_CONNECTION_LIMIT`, `DB_QUEUE_LIMIT`, `DB_IDLE_TIMEOUT_MS`, `DB_CONNECT_TIMEOUT_MS`)
+  - Performance indexes are available in `db/migrations/002_add_performance_indexes.sql` to optimize common queries (session history, leaderboard, player stats, session cleanup)
+  - Query optimizations include efficient aggregation queries and proper index usage
 - Tuning (ranges, timing, scoring bonuses) can be adjusted in:
   - `logic/arithmetic-generator.ts`
   - `logic/equation-generator.ts`

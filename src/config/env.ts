@@ -13,6 +13,10 @@ const envSchema = z.object({
   FRONTEND_ORIGIN: z.string().url().optional(),
   NODE_ENV: z.string().optional(),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+  DB_CONNECTION_LIMIT: z.coerce.number().int().positive().default(10),
+  DB_QUEUE_LIMIT: z.coerce.number().int().nonnegative().default(0),
+  DB_IDLE_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(60000),
+  DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
 });
 
 const parsed = envSchema.safeParse(process.env);
