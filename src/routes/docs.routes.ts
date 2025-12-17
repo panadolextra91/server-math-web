@@ -10,7 +10,6 @@ docsRouter.get("/docs.json", (_req, res) => {
   res.json(spec);
 });
 
-docsRouter.use("/docs", swaggerUi.serve);
-docsRouter.get("/docs", swaggerUi.setup(spec, { explorer: true }));
+docsRouter.use("/docs", swaggerUi.serve, swaggerUi.setup(spec, { explorer: true }));
 
 
