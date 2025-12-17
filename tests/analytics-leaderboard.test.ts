@@ -78,7 +78,12 @@ describe("Analytics & Leaderboard", () => {
 
     // Verify cache was populated
     const cacheKey = "leaderboard:all:20:0";
-    const cached = leaderboardCache.get(cacheKey);
+    const cached = leaderboardCache.get<{
+      scope: string;
+      updatedAt: string;
+      entries: any[];
+      pagination?: any;
+    }>(cacheKey);
     expect(cached).not.toBeNull();
     expect(cached?.scope).toBe("all");
     expect(cached?.entries.length).toBe(firstEntries.length);

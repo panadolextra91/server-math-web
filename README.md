@@ -64,7 +64,12 @@ The project includes automated API tests using **Vitest** and **Supertest**. No 
 
 All tests use the same database connection as the dev server, so ensure MySQL is running before running tests.
 
-### 5. API Overview (base URL: `/api`)
+### 5. API Docs (Swagger / OpenAPI)
+
+- **Swagger UI**: `GET /api/docs`
+- **OpenAPI JSON**: `GET /api/docs.json`
+
+### 6. API Overview (base URL: `/api`)
 
 - **Health**
   - `GET /api/health`
@@ -215,7 +220,7 @@ All tests use the same database connection as the dev server, so ensure MySQL is
       ```
     - Returns `404` if player not found
 
-### 6. Error Handling
+### 7. Error Handling
 
 All errors follow a standardized format:
 
@@ -248,7 +253,7 @@ All error responses include:
 - `requestId`: Unique request ID for tracing
 - `details`: Optional additional error context
 
-### 7. Notes
+### 8. Notes
 - Scores are always computed on the server (never trust client scores).
 - Questions are generated on the fly but stored in `questions` table for auditability and correct-answer lookup.
 - **Input sanitization**: Player names are automatically sanitized (trimmed, limited to 64 chars, special characters removed).
