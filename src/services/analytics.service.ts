@@ -1,4 +1,5 @@
 import { pool } from "../config/db";
+import { leaderboardCache } from "../utils/cache";
 
 export async function getAnalyticsOverview(level?: "easy" | "medium" | "hard") {
   const params: unknown[] = [];
@@ -60,6 +61,19 @@ export async function getLeaderboard(params: {
   const scope = params.scope ?? "all";
   const limit = Math.min(params.limit ?? 20, 100);
 
+  // Check cache first
+  const cacheKey = `leaderboard:${scope}:${limit}`;
+  const cached = leaderboardCache.get<{
+    scope: string;
+    updatedAt: string;
+    entries: any[];
+  }>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - query database
   let where = "";
   if (scope === "weekly") {
     where = "WHERE a.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
@@ -94,11 +108,16 @@ export async function getLeaderboard(params: {
       row.avgTimeMs !== null && row.avgTimeMs !== undefined ? Number(row.avgTimeMs) : null,
   }));
 
-  return {
+  const result = {
     scope,
     updatedAt: new Date().toISOString(),
     entries,
   };
+
+  // Cache for 60 seconds
+  leaderboardCache.set(cacheKey, result, 60000);
+
+  return result;
 }
 
 

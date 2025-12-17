@@ -170,6 +170,7 @@ All tests use the same database connection as the dev server, so ensure MySQL is
 ### 6. Notes
 - Scores are always computed on the server (never trust client scores).
 - Questions are generated on the fly but stored in `questions` table for auditability and correct-answer lookup.
+- **Leaderboard caching**: Results are cached in-memory for 60 seconds to reduce database load. Cache is automatically invalidated when new answers are submitted.
 - Tuning (ranges, timing, scoring bonuses) can be adjusted in:
   - `logic/arithmetic-generator.ts`
   - `logic/equation-generator.ts`

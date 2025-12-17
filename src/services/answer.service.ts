@@ -1,6 +1,7 @@
 import { getQuestionById } from "../models/question.model";
 import { insertAnswerLog, getSessionAnswerStats } from "../models/answer-log.model";
 import { gradeAnswer } from "../logic/scoring";
+import { leaderboardCache } from "../utils/cache";
 
 export async function submitAnswer(input: {
   sessionId: number;
@@ -48,6 +49,9 @@ export async function submitAnswer(input: {
     scoreDelta: scoring.scoreDelta,
     elapsedMs: input.elapsedMs,
   });
+
+  // Invalidate leaderboard cache since scores have changed
+  leaderboardCache.clearByPrefix("leaderboard:");
 
   const stats = await getSessionAnswerStats(input.sessionId);
 
