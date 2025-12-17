@@ -99,3 +99,22 @@ export async function getSessionSummary(sessionId: number): Promise<SessionSumma
   };
 }
 
+/**
+ * Closes sessions that have been inactive for more than the specified minutes
+ * @param inactiveMinutes - Number of minutes of inactivity before closing (default: 30)
+ * @returns Number of sessions closed
+ */
+export async function closeInactiveSessions(inactiveMinutes: number = 30): Promise<number> {
+  const [result] = await pool.execute(
+    `
+    UPDATE sessions
+    SET finished_at = CURRENT_TIMESTAMP
+    WHERE finished_at IS NULL
+      AND started_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+  `,
+    [inactiveMinutes],
+  );
+
+  return (result as { affectedRows: number }).affectedRows;
+}
+

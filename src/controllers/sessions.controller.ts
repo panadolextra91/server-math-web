@@ -5,6 +5,7 @@ import {
   fetchSession,
   fetchSessionSummary,
 } from "../services/session.service";
+import { sanitizePlayerName } from "../utils/sanitize";
 
 export async function createSessionHandler(req: Request, res: Response) {
   const { playerName, mode, difficulty } = req.body as {
@@ -13,7 +14,12 @@ export async function createSessionHandler(req: Request, res: Response) {
     difficulty?: "easy" | "medium" | "hard";
   };
 
-  const session = await createSession({ playerName, mode, difficulty });
+  const sanitized = sanitizePlayerName(playerName);
+  if (!sanitized) {
+    return res.status(400).json({ message: "Invalid player name" });
+  }
+
+  const session = await createSession({ playerName: sanitized, mode, difficulty });
   res.status(201).json({
     sessionId: session.id,
     playerName: session.playerName,

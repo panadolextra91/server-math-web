@@ -57,16 +57,32 @@ export async function getAnalyticsOverview(level?: "easy" | "medium" | "hard") {
 export async function getLeaderboard(params: {
   scope?: "all" | "weekly" | "daily";
   limit?: number;
+  offset?: number;
+  page?: number;
 }) {
   const scope = params.scope ?? "all";
   const limit = Math.min(params.limit ?? 20, 100);
+  
+  // Calculate offset from page or use provided offset
+  let offset = 0;
+  if (params.page !== undefined && params.page > 0) {
+    offset = (params.page - 1) * limit;
+  } else if (params.offset !== undefined) {
+    offset = Math.max(0, params.offset);
+  }
 
-  // Check cache first
-  const cacheKey = `leaderboard:${scope}:${limit}`;
+  // Check cache first (cache key includes offset for pagination)
+  const cacheKey = `leaderboard:${scope}:${limit}:${offset}`;
   const cached = leaderboardCache.get<{
     scope: string;
     updatedAt: string;
     entries: any[];
+    pagination: {
+      limit: number;
+      offset: number;
+      page: number | null;
+      hasMore: boolean;
+    };
   }>(cacheKey);
 
   if (cached) {
@@ -81,6 +97,18 @@ export async function getLeaderboard(params: {
     where = "WHERE a.created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)";
   }
 
+  // Get total count for pagination
+  const [countRows] = await pool.query(
+    `
+    SELECT COUNT(DISTINCT s.player_name) AS total
+    FROM answer_logs a
+    JOIN sessions s ON s.id = a.session_id
+    ${where}
+  `,
+  );
+  const total = Number((countRows as any[])[0]?.total ?? 0);
+
+  // Get paginated results
   const sql = `
     SELECT
       s.player_name AS playerName,
@@ -93,13 +121,13 @@ export async function getLeaderboard(params: {
     ${where}
     GROUP BY s.player_name
     ORDER BY totalScore DESC, accuracy DESC
-    LIMIT ${limit}
+    LIMIT ${limit} OFFSET ${offset}
   `;
 
   const [rows] = await pool.query(sql);
 
   const entries = (rows as any[]).map((row, index) => ({
-    rank: index + 1,
+    rank: offset + index + 1,
     playerName: row.playerName,
     totalScore: Number(row.totalScore ?? 0),
     totalQuestions: Number(row.totalQuestions ?? 0),
@@ -108,10 +136,20 @@ export async function getLeaderboard(params: {
       row.avgTimeMs !== null && row.avgTimeMs !== undefined ? Number(row.avgTimeMs) : null,
   }));
 
+  const currentPage = params.page ?? (offset > 0 ? Math.floor(offset / limit) + 1 : 1);
+  const hasMore = offset + entries.length < total;
+
   const result = {
     scope,
     updatedAt: new Date().toISOString(),
     entries,
+    pagination: {
+      limit,
+      offset,
+      page: params.page ?? null,
+      total,
+      hasMore,
+    },
   };
 
   // Cache for 60 seconds

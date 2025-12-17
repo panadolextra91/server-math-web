@@ -159,8 +159,11 @@ All tests use the same database connection as the dev server, so ensure MySQL is
     - Response: aggregated stats across all sessions and difficulty levels (and per difficulty).
 
 - **Leaderboard**
-  - `GET /api/leaderboard?scope=all&limit=20`
+  - `GET /api/leaderboard?scope=all&limit=20&page=1` or `&offset=0`
     - `scope`: `all` | `weekly` | `daily` (default: `all`)
+    - `limit`: number (default: 20, max: 100)
+    - `page`: number (1-based, alternative to offset)
+    - `offset`: number (alternative to page)
     - Response:
       ```json
       {
@@ -175,16 +178,53 @@ All tests use the same database connection as the dev server, so ensure MySQL is
             "accuracy": 0.93,
             "avgTimeMs": 5200
           }
+        ],
+        "pagination": {
+          "limit": 20,
+          "offset": 0,
+          "page": 1,
+          "total": 150,
+          "hasMore": true
+        }
+      }
+      ```
+
+- **Player Statistics**
+  - `GET /api/players/:playerName/stats`
+    - Response:
+      ```json
+      {
+        "playerName": "Alice",
+        "totalSessions": 5,
+        "totalQuestions": 75,
+        "totalCorrect": 68,
+        "totalWrong": 7,
+        "accuracy": 0.907,
+        "avgTimeMs": 5200,
+        "totalScore": 650,
+        "bestScore": 180,
+        "byDifficulty": [
+          {
+            "level": "easy",
+            "totalQuestions": 30,
+            "accuracy": 0.95,
+            "avgTimeMs": 4000
+          }
         ]
       }
       ```
+    - Returns `404` if player not found
 
 ### 6. Notes
 - Scores are always computed on the server (never trust client scores).
 - Questions are generated on the fly but stored in `questions` table for auditability and correct-answer lookup.
+- **Input sanitization**: Player names are automatically sanitized (trimmed, limited to 64 chars, special characters removed).
 - **Leaderboard caching**: Results are cached in-memory for 60 seconds to reduce database load. Cache is automatically invalidated when new answers are submitted.
+- **Leaderboard pagination**: Supports `page` or `offset` parameters for large result sets.
+- **Session cleanup**: Inactive sessions (>30 minutes) are automatically closed every 5 minutes.
 - **Structured logging**: All logs are output in JSON format for easy parsing and integration with log aggregation tools. Includes request/response details, error stack traces, and performance metrics.
 - **Health check**: Includes database connectivity test. Returns `503` if database is unavailable.
+- **Graceful shutdown**: Server handles SIGTERM/SIGINT signals and closes connections cleanly.
 - Tuning (ranges, timing, scoring bonuses) can be adjusted in:
   - `logic/arithmetic-generator.ts`
   - `logic/equation-generator.ts`

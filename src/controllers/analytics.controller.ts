@@ -11,7 +11,9 @@ export async function leaderboardHandler(req: Request, res: Response) {
   const scope =
     (req.query.scope as "all" | "weekly" | "daily" | undefined) ?? "all";
   const limit = req.query.limit ? Number(req.query.limit) : undefined;
-  const result = await getLeaderboard({ scope, limit });
+  const offset = req.query.offset ? Number(req.query.offset) : undefined;
+  const page = req.query.page ? Number(req.query.page) : undefined;
+  const result = await getLeaderboard({ scope, limit, offset, page });
   res.json(result);
 }
 

@@ -7,6 +7,7 @@ import { sessionsRouter } from "./routes/sessions.routes";
 import { questionsRouter } from "./routes/questions.routes";
 import { answersRouter } from "./routes/answers.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
+import { playersRouter } from "./routes/players.routes";
 import { errorHandler } from "./middlewares/error-handler";
 import { requestLogger } from "./middlewares/request-logger";
 
@@ -29,6 +30,7 @@ export function createApp() {
   app.use("/api", questionsRouter);
   app.use("/api", answersRouter);
   app.use("/api", analyticsRouter);
+  app.use("/api", playersRouter);
 
   app.use(errorHandler);
 
