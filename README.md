@@ -42,7 +42,29 @@
   ```
   Server listens on `http://localhost:3000`.
 
-### 4. API Overview (base URL: `/api`)
+### 4. Testing API Endpoints
+
+The project includes automated API tests using **Vitest** and **Supertest**. No need for manual Postman testing!
+
+- **Run all tests**
+  ```bash
+  npm test
+  ```
+
+- **Run tests in watch mode** (auto-rerun on file changes)
+  ```bash
+  npm run test:watch
+  ```
+
+**Test coverage:**
+- ✅ Health endpoint (`GET /api/health`)
+- ✅ Session lifecycle (create, end, summary)
+- ✅ Question generation and answer grading (full flow)
+- ✅ Analytics and leaderboard endpoints
+
+All tests use the same database connection as the dev server, so ensure MySQL is running before running tests.
+
+### 5. API Overview (base URL: `/api`)
 
 - **Health**
   - `GET /api/health`
@@ -145,7 +167,7 @@
       }
       ```
 
-### 5. Notes
+### 6. Notes
 - Scores are always computed on the server (never trust client scores).
 - Questions are generated on the fly but stored in `questions` table for auditability and correct-answer lookup.
 - Tuning (ranges, timing, scoring bonuses) can be adjusted in:
