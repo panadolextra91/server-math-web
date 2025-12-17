@@ -16,8 +16,8 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     };
 
     // Add request ID if present (useful for tracing)
-    if (req.headers["x-request-id"]) {
-      logEntry.requestId = req.headers["x-request-id"];
+    if (req.requestId) {
+      logEntry.requestId = req.requestId;
     }
 
     // Log request body size if available

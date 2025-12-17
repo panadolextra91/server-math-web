@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { getPlayerStatsHandler } from "../controllers/players.controller";
 import { validate } from "../middlewares/validate";
+import { asyncHandler } from "../middlewares/async-handler";
 
 const playerNameParamsSchema = z.object({
   body: z.object({}),
@@ -16,6 +17,6 @@ export const playersRouter = Router();
 playersRouter.get(
   "/players/:playerName/stats",
   validate(playerNameParamsSchema),
-  getPlayerStatsHandler,
+  asyncHandler(getPlayerStatsHandler),
 );
 

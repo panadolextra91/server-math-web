@@ -215,13 +215,48 @@ All tests use the same database connection as the dev server, so ensure MySQL is
       ```
     - Returns `404` if player not found
 
-### 6. Notes
+### 6. Error Handling
+
+All errors follow a standardized format:
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Session with identifier '123' not found",
+    "requestId": "550e8400-e29b-41d4-a716-446655440000",
+    "details": {
+      "resource": "Session",
+      "identifier": 123
+    }
+  }
+}
+```
+
+**Error Codes:**
+- `VALIDATION_ERROR` (400) - Request validation failed
+- `NOT_FOUND` (404) - Resource not found
+- `BAD_REQUEST` (400) - Invalid request
+- `INVALID_INPUT` (400) - Invalid input data
+- `INTERNAL_ERROR` (500) - Internal server error
+- `DATABASE_ERROR` (500) - Database operation failed
+- `SERVICE_UNAVAILABLE` (503) - Service temporarily unavailable
+
+All error responses include:
+- `code`: Machine-readable error code
+- `message`: Human-readable error message
+- `requestId`: Unique request ID for tracing
+- `details`: Optional additional error context
+
+### 7. Notes
 - Scores are always computed on the server (never trust client scores).
 - Questions are generated on the fly but stored in `questions` table for auditability and correct-answer lookup.
 - **Input sanitization**: Player names are automatically sanitized (trimmed, limited to 64 chars, special characters removed).
 - **Leaderboard caching**: Results are cached in-memory for 60 seconds to reduce database load. Cache is automatically invalidated when new answers are submitted.
 - **Leaderboard pagination**: Supports `page` or `offset` parameters for large result sets.
 - **Session cleanup**: Inactive sessions (>30 minutes) are automatically closed every 5 minutes.
+- **Request ID tracking**: Each request receives a unique UUID v4 request ID, included in all logs and returned in the `X-Request-ID` response header for easy request tracing.
+- **Standardized error handling**: All errors follow a consistent format with error codes, descriptive messages, and request IDs for easy debugging and client handling.
 - **Structured logging**: All logs are output in JSON format for easy parsing and integration with log aggregation tools. Includes request/response details, error stack traces, and performance metrics.
 - **Health check**: Includes database connectivity test. Returns `503` if database is unavailable.
 - **Graceful shutdown**: Server handles SIGTERM/SIGINT signals and closes connections cleanly.

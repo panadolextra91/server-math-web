@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { generateQuestionHandler } from "../controllers/questions.controller";
 import { validate } from "../middlewares/validate";
+import { asyncHandler } from "../middlewares/async-handler";
 
 const generateSchema = z.object({
   body: z.object({
@@ -18,7 +19,7 @@ export const questionsRouter = Router();
 questionsRouter.post(
   "/questions/generate",
   validate(generateSchema),
-  generateQuestionHandler,
+  asyncHandler(generateQuestionHandler),
 );
 
 

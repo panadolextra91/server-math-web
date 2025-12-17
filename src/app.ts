@@ -10,6 +10,7 @@ import { analyticsRouter } from "./routes/analytics.routes";
 import { playersRouter } from "./routes/players.routes";
 import { errorHandler } from "./middlewares/error-handler";
 import { requestLogger } from "./middlewares/request-logger";
+import { requestIdMiddleware } from "./middlewares/request-id";
 
 export function createApp() {
   const app = express();
@@ -23,6 +24,7 @@ export function createApp() {
     ),
   );
   app.use(express.json());
+  app.use(requestIdMiddleware);
   app.use(requestLogger);
 
   app.use("/api", healthRouter);

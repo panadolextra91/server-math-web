@@ -13,6 +13,23 @@ describe("Health API", () => {
     expect(res.body.database).toBeDefined();
     expect(res.body.database.status).toBe("connected");
     expect(typeof res.body.database.responseTimeMs).toBe("number");
+
+    // Request ID header should be present
+    const requestId = res.headers["x-request-id"];
+    expect(typeof requestId).toBe("string");
+    expect(requestId.length).toBeGreaterThan(0);
+  });
+
+  it("generates a unique request ID per request", async () => {
+    const res1 = await request(app).get("/api/health");
+    const res2 = await request(app).get("/api/health");
+
+    const id1 = res1.headers["x-request-id"];
+    const id2 = res2.headers["x-request-id"];
+
+    expect(typeof id1).toBe("string");
+    expect(typeof id2).toBe("string");
+    expect(id1).not.toBe(id2);
   });
 });
 

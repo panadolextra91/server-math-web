@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { submitAnswerHandler } from "../controllers/answers.controller";
 import { validate } from "../middlewares/validate";
+import { asyncHandler } from "../middlewares/async-handler";
 
 const submitSchema = z.object({
   body: z.object({
@@ -20,7 +21,11 @@ const submitSchema = z.object({
 
 export const answersRouter = Router();
 
-answersRouter.post("/answers/submit", validate(submitSchema), submitAnswerHandler);
+answersRouter.post(
+  "/answers/submit",
+  validate(submitSchema),
+  asyncHandler(submitAnswerHandler),
+);
 
 
 

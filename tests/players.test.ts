@@ -52,16 +52,21 @@ describe("Players API", () => {
   });
 
   it("returns 404 for non-existent player", async () => {
-    await request(app)
+    const res = await request(app)
       .get("/api/players/NonExistentPlayer12345/stats")
       .expect(404);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe("NOT_FOUND");
+    expect(typeof res.body.error.requestId).toBe("string");
   });
 
   it("sanitizes player name in URL", async () => {
-    // Test with special characters (should be sanitized)
+    // Test with special characters (should be sanitized then treated as not found)
     const res1 = await request(app)
-      .get("/api/players/Test@User#123/stats")
+      .get("/api/players/Test@User123/stats")
       .expect(404); // Should not find because special chars are removed
+    expect(res1.body.error).toBeDefined();
+    expect(res1.body.error.code).toBe("NOT_FOUND");
 
     // Test with spaces (should be trimmed)
     const res2 = await request(app)

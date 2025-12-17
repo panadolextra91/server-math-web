@@ -44,21 +44,26 @@ describe("Sessions API", () => {
       .expect(201);
     expect(res3.body.playerName.length).toBeLessThanOrEqual(64);
 
-    // Test invalid names
-    await request(app)
+    // Test invalid names - should return standardized error response
+    const invalidRes1 = await request(app)
       .post("/api/sessions")
       .send({ playerName: "", mode: "arithmetic" })
       .expect(400);
+    expect(invalidRes1.body.error).toBeDefined();
+    expect(invalidRes1.body.error.code).toBe("VALIDATION_ERROR");
+    expect(typeof invalidRes1.body.error.requestId).toBe("string");
 
-    await request(app)
+    const invalidRes2 = await request(app)
       .post("/api/sessions")
       .send({ playerName: "   ", mode: "arithmetic" })
       .expect(400);
+    expect(invalidRes2.body.error.code).toBe("INVALID_INPUT");
 
-    await request(app)
+    const invalidRes3 = await request(app)
       .post("/api/sessions")
       .send({ playerName: "@#$%", mode: "arithmetic" })
       .expect(400);
+    expect(invalidRes3.body.error.code).toBe("INVALID_INPUT");
   });
 });
 

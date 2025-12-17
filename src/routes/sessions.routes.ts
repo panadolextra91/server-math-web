@@ -6,6 +6,7 @@ import {
   getSessionSummaryHandler,
 } from "../controllers/sessions.controller";
 import { validate } from "../middlewares/validate";
+import { asyncHandler } from "../middlewares/async-handler";
 
 const createSessionSchema = z.object({
   body: z.object({
@@ -27,15 +28,19 @@ const sessionIdParamsSchema = z.object({
 
 export const sessionsRouter = Router();
 
-sessionsRouter.post("/sessions", validate(createSessionSchema), createSessionHandler);
+sessionsRouter.post(
+  "/sessions",
+  validate(createSessionSchema),
+  asyncHandler(createSessionHandler),
+);
 sessionsRouter.patch(
   "/sessions/:sessionId/end",
   validate(sessionIdParamsSchema),
-  endSessionHandler,
+  asyncHandler(endSessionHandler),
 );
 sessionsRouter.get(
   "/sessions/:sessionId/summary",
   validate(sessionIdParamsSchema),
-  getSessionSummaryHandler,
+  asyncHandler(getSessionSummaryHandler),
 );
 
