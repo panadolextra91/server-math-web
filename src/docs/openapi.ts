@@ -49,6 +49,10 @@
  *         questionText: { type: string }
  *         payload: { type: object, additionalProperties: true }
  *         maxTimeMs: { type: number }
+ *         source:
+ *           type: string
+ *           description: "Where the question was generated from (genai or local)"
+ *           enum: [genai, local]
  *     SubmitAnswerRequest:
  *       type: object
  *       required: [sessionId, mode, difficulty, questionText, userAnswer, elapsedMs]
@@ -239,6 +243,7 @@
  */
 
 export const openapiDocMarker = true;
+
 
 
 

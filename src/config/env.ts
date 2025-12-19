@@ -18,6 +18,8 @@ const envSchema = z.object({
   DB_IDLE_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(60000),
   DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
   ADMIN_API_KEY: z.string().optional(),
+  // Base URL for external GenAI math quiz generator (e.g. http://localhost:8000)
+  GENAI_BASE_URL: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
